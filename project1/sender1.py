@@ -5,10 +5,10 @@ message = "HELLO WORLD FROM SENDER 1"
 
 sender_id = 0
 time_slice = 0.5
-bit_time = 0.005
+bit_time = 0.05
 
 def send_bit(b):																		
-	print(b, end='')																	#print sent bit
+	print(b, " at ", ((time.time()*1000)%1000)/1000.0)							#query time and convert to seconds in range [0, 1.0)																#print sent bit
 	#if b == 1:																			#if bit is 1, LED on
 		#GPIO.output(23, GPIO.HIGH)														#signal high
 	time.sleep(bit_time)																#wait bit_time for receiver to sample
@@ -17,7 +17,7 @@ def send_bit(b):
 	
 
 def send_char(c):
-    print(c + ": " , end='')															#print sent character
+    print(c + ": ")															#print sent character
     bit_string = bin(ord(c))[2:].zfill(7)												#format bit_string to remove 0b and force length 7
     for x in range (0, len(bit_string)):												#loop through bit_string and transmit each bit
         send_bit(bit_string[x])															#send each bit

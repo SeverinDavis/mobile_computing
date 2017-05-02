@@ -2,7 +2,7 @@
 #import RPi.GPIO as GPIO
 import time
 time_slice = 0.5
-bit_time = 0.031
+bit_time = 0.05
 
 # Use BCM numbering
 #GPIO.setmode(GPIO.BCM)

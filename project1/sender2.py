@@ -1,18 +1,18 @@
 import time
 import RPi.GPIO as GPIO
  
-message = "HELLO WORLD FROM SENDER 1"
+message = "hello world from sender 2"
 
-sender_id = 0
+sender_id = 1
 time_slice = 0.5
 bit_time = 0.02
 
 def send_bit(b):																		
 	#print(b, " at ", ((time.time()*1000)%1000)/1000.0)							#query time and convert to seconds in range [0, 1.0)																#print sent bit
 	if b == '1':																	#if bit is 1, LED on
-		GPIO.output(23, GPIO.HIGH)														#signal high
+		GPIO.output(24, GPIO.HIGH)														#signal high
 	time.sleep(bit_time)																#wait bit_time for receiver to sample
-	GPIO.output(23, GPIO.LOW)															#signal low after bit_time delay
+	GPIO.output(24, GPIO.LOW)															#signal low after bit_time delay
 	return
 	
 
@@ -27,7 +27,7 @@ def send_char(c):
 
 def main():
 	GPIO.setmode(GPIO.BCM)
-	GPIO.setup(23,GPIO.OUT)
+	GPIO.setup(24,GPIO.OUT)
 
 	try:
 		x = 0														#signal high
@@ -42,4 +42,3 @@ def main():
 
 
 main() 
-

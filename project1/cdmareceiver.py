@@ -1,14 +1,13 @@
 import time
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
  
-bit_time = 0.02
+cps = 2			#characters per second
+bps = 8 * cps
 
-threshold_lo = 0
-threshold_hi = 1023
+threshold_lo = 255
+threshold_hi = 3*threshold_lo
 
-    return
-
-def self_cal()
+def self_cal() :
 	GPIO.setmode(GPIO.BCM)
 	GPIO.setup(23,GPIO.OUT) #sender1
 	GPIO.setup(24,GPIO.OUT) #sender2
@@ -31,7 +30,7 @@ def self_cal()
 	GPIO.output(23, GPIO.HIGH)
 	GPIO.output(24, GPIO.HIGH)
 	time.sleep(bit_time)
-	high =  sample(raw)
+	high = sample(raw)
 
 	threshold_lo = (low + mid)/2
 	threshold_hi = (mid + hi)/2
@@ -42,7 +41,7 @@ def self_cal()
 
 
 def sample_raw():
-	value
+	value = 0
 	#read serial
 	return value
 
@@ -51,21 +50,39 @@ def sample():
 	value = sample(raw)
 	if value < threshold_lo:
 		return 0
-	else if value < threshold_hi:
+	elif value < threshold_hi:
 		return 1
-	else
+	else:
 		return 2
 
 def run():
 	print("High threshold: ", threshold_hi)
 	print("Low threshold: ", threshold_lo)
+	past_time =  ((time.time()*1000)%1000)
+	index = 0
+
 	while True:
-		print("Running")
-		time.sleep(1)
+		sample_time =  ((float) (index * 1000.0/bps + ((1000.0/bps)/2.0)))
+
+		current_time  = ((time.time()*1000)%1000)
+		if past_time < sample_time and sample_time <= current_time:
+			#sample
+			print("sampled between: ", str(past_time), current_time, "   target: ", sample_time, "   index: ", index)
+			print((time.time()*1000)%1000)
+			index = (index + 1) % bps
+			print("new index ", index)
+			time.sleep(0.01)
+
+
+
+		past_time = current_time
+
+
+
 	return
 
 def main():
-	self_cal()
+	#self_cal()
 
 	run()
 

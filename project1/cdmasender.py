@@ -1,7 +1,8 @@
 
 
 import time
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
+import multiprocessing
  
 cps = 1
 bpc = 14		#characters per second
@@ -29,7 +30,7 @@ array_codes.append(array_s2)
 
 g_final_message = []
 
-print(array_codes)
+#print(array_codes)
 
 def setup():
 	GPIO.setmode(GPIO.BCM)
@@ -37,11 +38,14 @@ def setup():
 	return
 
 
-def send_bit():
-	#print(b, " at ", ((time.time()*1000)%1000)/1000.0)																				
-	if b == '1':																	
-		GPIO.output(SNDR_GPIO, GPIO.HIGH)														
-	time.sleep(bit_time)																
+def send_bit(b):
+	if int(b) == 1:
+		#print("1")																	
+		GPIO.output(SNDR_GPIO, GPIO.HIGH)
+	else:
+		#print("0")
+		GPIO.output(SNDR_GPIO, GPIO.LOW)
+
 
 def encode(message):
 	sender_convert = []
@@ -65,8 +69,10 @@ def run(final_message):
 
 		if index == 0: 
 			if past_time > current_time:
-				print(letter_index, int(index/2), index%2)
-				#print("sent: ", final_message[letter_index+int(index/2)][index%2])
+				#print(letter_index*7, int(index/2), index%2)
+				send_bit(final_message[letter_index*7+int(index/2)][index%2])
+				#print("sent: ", final_message[letter_index*7+int(index/2)][index%2])
+				#print("")
 				#print("sent between: ", str(past_time), current_time, "   target: ", sample_time, "   index: ", index)
 				#print((time.time()*1000)%1000)
 				index = (index + 1) % bps
@@ -74,8 +80,10 @@ def run(final_message):
 
 		else :
 			if past_time < sample_time and sample_time <= current_time:
-				print(letter_index, int(index/2), index%2)
-				#print("sent: ", final_message[letter_index+int(index/2)][index%2])
+				#print(letter_index*7, int(index/2), index%2)
+				send_bit(final_message[letter_index*7+int(index/2)][index%2])
+				#print("sent: ", final_message[letter_index*7+int(index/2)][index%2])
+				#print("")
 				#print("sent between: ", str(past_time), current_time, "   target: ", sample_time, "   index: ", index)
 				#print((time.time()*1000)%1000)
 				index = (index + 1) % bps
@@ -88,8 +96,11 @@ def run(final_message):
 
 
 def main():
+	setup()
 	g_final_message = (encode(sender_messages[sender_id]))
+	#print(g_final_message)
 	run(g_final_message)
+
 
 
 

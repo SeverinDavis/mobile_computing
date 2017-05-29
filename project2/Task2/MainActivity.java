@@ -141,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
         et = (EditText) findViewById(R.id.editText2);
         sendbutton = (Button) findViewById(R.id.button2);
         sendbutton.setEnabled(false);
+        //this listener pulls the text from the number field and sends it
         sendbutton.setOnClickListener(new View.OnClickListener() {
              public void onClick(View v) {
 
@@ -184,10 +185,11 @@ public class MainActivity extends AppCompatActivity {
                  Log.d("send", "service found");
 
 
+                 //pull characteristic from servies (there's only one service for this one. Its "intensity")
                  BluetoothGattCharacteristic bgc = (servicelist.get(service_found).getCharacteristics()).get(0);
                  Log.d("send", intmessage.toString());
 
-
+                 //its a uint16. 0x12 is the code for a uint16. and we AND it with 0xFFFF to get rid of any bits that shouldnt be there.
                  if(bgc.setValue(intmessage.intValue() & 0xFFFF, 0x12, 0)) {
                      Log.d("send", "set characteristic");
                      gatt.writeCharacteristic(bgc);

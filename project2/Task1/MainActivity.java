@@ -64,9 +64,12 @@ public class MainActivity extends AppCompatActivity {
     private static final UUID TEMP_UUID = UUID.fromString("00002a1c-0000-1000-8000-00805f9b34fb");
     private static final UUID HUMID_UUID = UUID.fromString("00002a6f-0000-1000-8000-00805f9b34fb");
     int sw = 0;
+
+    //declare bluetooth callbacks
     private final BluetoothGattCallback mGattCallback =
             new BluetoothGattCallback() {
 
+            	//called when bluetooth connection changes
                 @Override
                 public void onConnectionStateChange(BluetoothGatt gatt, int status,
                                                     int newState) {
@@ -82,9 +85,11 @@ public class MainActivity extends AppCompatActivity {
                     servicelist = gatt.getServices();
                     Log.d("services", "list size " + servicelist.size());
 
+                    //logs all the services discovered on the device we connected to
                     for(int i  = 0; i< servicelist.size(); i++)
                         Log.d("Services", servicelist.get(i).getUuid().toString());
 
+                    //There are three services on our device. so we use that as a sanity check
                     if(servicelist.size() == 3)
                     {
                         runOnUiThread(new Runnable() {
@@ -106,8 +111,12 @@ public class MainActivity extends AppCompatActivity {
                                                  BluetoothGattCharacteristic characteristic) {
                     Log.d("statechange", "Characteristic read");
 
+                    //temperature and humidity can each cause a callback here. so we check if it's the temperature service or the humidity service
                     if(characteristic.getUuid().equals(TEMP_UUID))
                     {
+                    	//update temperature UI
+                    	//first byte in payload is not useful.
+                    	//we know its float, so we extract float with offset 1, to ignore the first bye
                         final Float temperature = characteristic.getFloatValue(BluetoothGattCharacteristic.FORMAT_FLOAT, 1);
                         Log.d("statechange", temperature.toString());
                         runOnUiThread(new Runnable() {
@@ -117,11 +126,14 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                     }
+                    //check if humidity service
                     if(characteristic.getUuid().equals(HUMID_UUID))
                     {
+                    	//update humidity UI
                         final DecimalFormat df = new DecimalFormat("#.##");
                         df.setRoundingMode(RoundingMode.CEILING);
 
+                        //extract Uint16 from payload and format into percentage with one decmial place
                         final Integer h = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 0);
                         final Double humid = h / 100.0;
                         Log.d("statechange", humid.toString());
@@ -137,6 +149,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 @Override
+                //CLONE OF CHARACTERISTIC CHANGED
+                //we do the exact same thing. just check where our callback came from and update the UI accordingly
                 // Result of a characteristic read operation
                 public void onCharacteristicRead(BluetoothGatt gatt,
                                                  BluetoothGattCharacteristic characteristic,
@@ -174,7 +188,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 @Override
-                // Result of a characteristic read operation
+                //more or less unused in this app
+                // Result of a characteristic write operation
                 public void onCharacteristicWrite(BluetoothGatt gatt,
                                                   BluetoothGattCharacteristic characteristic,
                                                   int status) {
@@ -188,11 +203,13 @@ public class MainActivity extends AppCompatActivity {
             };
 
 
+    //callback when a new device is discovered
     private BluetoothAdapter.LeScanCallback mLeScanCallback =
             new BluetoothAdapter.LeScanCallback() {
                 @Override
                 public void onLeScan(final BluetoothDevice device, int rssi,
                                      byte[] scanRecord) {
+                	//we scan internally and only add the device to our list if the mac address matches
                     if(device.getAddress().equals("F6:B6:2A:79:7B:5D"))
                         devicelist.add(device);
 
@@ -217,10 +234,12 @@ public class MainActivity extends AppCompatActivity {
 
         subscribe.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
+            	//subscribe/unsubscribe button
                 if(subscribe.getText().equals("Subscribe")) {
                     subscribe.setText("Unsubscribe");
                     if (servicelist == null)
                         return;
+                    //we try to find the weather UUID
                     int service_found = -1;
                     UUID uuid = WEATHER_UUID;
                     for (int i = 0; i < servicelist.size(); i++) {
@@ -236,12 +255,18 @@ public class MainActivity extends AppCompatActivity {
 
                     Log.d("readtemp", "service found");
 
+                    //if we found the weather service, we can subscribe to it.
+                    //we pull the characteristic at index 0 first. 
+                    //this is the temperature characteristic and subscribe to it.
+
                     BluetoothGattCharacteristic tgc = (servicelist.get(service_found).getCharacteristics()).get(sw);
                     gatt.setCharacteristicNotification(tgc, true);
                     BluetoothGattDescriptor tdesc = tgc.getDescriptor(CONFIG_DESCRIPTOR);
                     tdesc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
                     gatt.writeDescriptor(tdesc);
 
+
+                    //if we try to subscribe to the humidity updates right away, it doesn't work. so we wait a little bit
                     try
                     {
                         Thread.sleep(300);
@@ -251,7 +276,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
 
-
+                    //we pull the second characteristic at index 1. this is humidity and subscribe to it.
                     sw++;
                      tgc = (servicelist.get(service_found).getCharacteristics()).get(sw);
                     gatt.setCharacteristicNotification(tgc, true);
@@ -264,6 +289,9 @@ public class MainActivity extends AppCompatActivity {
 
 
                 }
+
+                //CLONE OF SUBSCRIPTION
+                //this is literally the same thing except we unsubscribe from both services
                 else {
                     subscribe.setText("Subscribe");
                     if (servicelist == null)
@@ -309,8 +337,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+		//this reads the humidity characteristic
         humidpoll.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
+            	//check if we have our service
                 if(servicelist == null)
                     return;
                 int service_found = -1;
@@ -329,6 +359,7 @@ public class MainActivity extends AppCompatActivity {
 
                 Log.d("readtemp", "service found");
 
+                //retrieve humidity characterisitic and send it back with readCharacteristic()
                 BluetoothGattCharacteristic bgc = (servicelist.get(service_found).getCharacteristics()).get(1);
                 Log.d("readtemp", "trying to read");
                 gatt.readCharacteristic(bgc);
@@ -336,7 +367,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-
+        //CLONE OF HUMIDITY READ FUNCTION
+        //does the exact same thing as the humidity function. but it reads temperature
         temppoll.setOnClickListener(new View.OnClickListener() {
               public void onClick(View v) {
                   if(servicelist == null)
@@ -363,6 +395,7 @@ public class MainActivity extends AppCompatActivity {
               }
         });
 
+        //this scans for bluetooth devices and then automatically connects
         button = (Button) findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -397,10 +430,12 @@ public class MainActivity extends AppCompatActivity {
                             return;
                         }
 
+                        //start bluetooth scan
                         mBluetoothAdapter.startLeScan( mLeScanCallback);
 
                         Log.d("onClick", "Trying to sleep");
 
+                        //wait for devices to be discovered
                         try {
 
                             Thread.sleep((2000));
@@ -410,6 +445,7 @@ public class MainActivity extends AppCompatActivity {
                             Log.d("onClick", "Exception when sleeping");
                         }
                         Log.d("onClick", "Stopping scan");
+                        //stop bluetooth scan
                         mBluetoothAdapter.stopLeScan(mLeScanCallback);
 
                         runOnUiThread(new Runnable() {
@@ -418,6 +454,8 @@ public class MainActivity extends AppCompatActivity {
                                 Toast.makeText(getApplicationContext(), devicelist.size() + " devices found", Toast.LENGTH_SHORT).show();
                             }
                         });
+
+                        //check if we found our device in the scan
                         if(devicelist.size() == 0)
                         {
                             runOnUiThread(new Runnable() {
@@ -432,8 +470,10 @@ public class MainActivity extends AppCompatActivity {
                         }
                         else
                         {
+                        	//connect to device and register callback
                             gatt = devicelist.get(0).connectGatt(MainActivity.super.getApplicationContext(), false, mGattCallback);
                             Log.d("services", "connected");
+                            
                             List<BluetoothGattService> servicelist = gatt.getServices();
                             Log.d("services", "list size " + servicelist.size());
 

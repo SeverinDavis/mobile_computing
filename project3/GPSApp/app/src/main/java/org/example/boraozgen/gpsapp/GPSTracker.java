@@ -35,6 +35,8 @@ public class GPSTracker extends Service {
     double avgSpeed;
     // First location: for distance calculation
     Location firstLocation;
+    // Previous location: for avg speed calculation
+    Location previousLocation;
     // Array of locations: for location logging
     List<Location> locationPoints;
     // Location Manager: the system service, which provides
@@ -44,6 +46,12 @@ public class GPSTracker extends Service {
     LocationListener listener;
     // GPX file creator: defined below
     GPX navigation;
+    // Timestamp for avg speed calculation
+    Long timestamp;
+    // First timestamp
+    Long firstTimestamp;
+    // Total moved distance: for avg speed calculation
+    double cumulativeDistance;
 
     // TODO: possible feature: ask for permissions
 
@@ -58,6 +66,7 @@ public class GPSTracker extends Service {
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         locationPoints = new ArrayList<Location>();
         navigation = new GPX();
+        cumulativeDistance = 0;
 
         // Implementation of listener for location callbacks
         listener = new LocationListener() {
@@ -65,6 +74,14 @@ public class GPSTracker extends Service {
             @Override
             public void onLocationChanged(Location location) {
                 Log.d(TAG, "Location changed");
+
+                // Calculate total distance and avg speed
+                if (previousLocation != null) {
+                    timestamp = System.currentTimeMillis()/1000;
+                    cumulativeDistance += location.distanceTo(previousLocation);
+                    avgSpeed = cumulativeDistance / (timestamp - firstTimestamp);
+                    Log.d(TAG, timestamp.toString());
+                }
 
                 // Entered only at the first time
                 if (firstLocation == null) {
@@ -74,6 +91,10 @@ public class GPSTracker extends Service {
                     firstLocation = new Location("");
                     firstLocation.setLatitude(location.getLatitude());
                     firstLocation.setLongitude(location.getLongitude());
+                    // Instantiate previousLocation
+                    previousLocation = new Location("");
+                    firstTimestamp = System.currentTimeMillis()/1000;
+                    Log.d(TAG, firstTimestamp.toString());
                 }
 
                 // Add location values to the list
@@ -82,7 +103,9 @@ public class GPSTracker extends Service {
                 latitude = location.getLatitude();
                 longitude = location.getLongitude();
                 distance = location.distanceTo(firstLocation);
-                avgSpeed = location.getSpeed();
+
+                previousLocation.setLatitude(location.getLatitude());
+                previousLocation.setLongitude(location.getLongitude());
             }
 
             @Override
@@ -111,7 +134,7 @@ public class GPSTracker extends Service {
          * Time between updates: 5000 ms
          * Distance between updates: 1 meter
          */
-        locationManager.requestLocationUpdates(locationManager.NETWORK_PROVIDER, 5000, 1, listener);
+        locationManager.requestLocationUpdates(locationManager.NETWORK_PROVIDER, 5000, 0, listener);
         // TODO: Use GPS_PROVIDER. (does not work with my Nexus 5) Also: updates every ~20 seconds instead of 5
 
         return Service.START_STICKY;

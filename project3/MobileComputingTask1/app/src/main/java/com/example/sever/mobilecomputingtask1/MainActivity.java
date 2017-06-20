@@ -60,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
     boolean unlock = false;
     double A = 0;
 
+    int rssi_array[] = new int[3];
+
     public void update_beacon(String text)
     {
         final String set = text;
@@ -186,12 +188,22 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d("namespace", namespace.toString());
                                 Log.d("instance", instance.toString());
 
+                                rssi_array[0] = rssi;
+
                                 String sdistance = "unknown";
                                 A = txpower;
-                                if(true)
+                                unlock = true;
+                                if(!unlock)
+                                {
+                                    rssi_array[1] = rssi;
+                                    rssi_array[2] = rssi;
+                                }
+                                if(unlock)
                                 {
                                     Log.d("RSSI", rssi + "");
-                                    Double distance = Math.pow(10, (rssi - (-74))/-20.0);
+                                    double rssi_ave = (rssi_array[0] + rssi_array[1] + rssi_array[2])/3.0;
+
+                                    Double distance = Math.pow(10, (rssi_ave - (A-41))/-20.0);
                                     sdistance = distance.toString();
                                 }
 
@@ -229,6 +241,7 @@ public class MainActivity extends AppCompatActivity {
                                 String prefix = "";
 
                                 A = ranging;
+                                rssi_array[1] = rssi;
 
                                 switch (urlscheme)
                                 {
@@ -256,12 +269,23 @@ public class MainActivity extends AppCompatActivity {
 
                                 String surl = new String(url);
                                 update_url(prefix + surl.toString());
+                                if(unlock)
+                                {
+                                    String sdistance = "unknown";
+
+                                    Log.d("RSSI", rssi + "");
+                                    double rssi_ave = (rssi_array[0] + rssi_array[1] + rssi_array[2])/3.0;
+
+                                    Double distance = Math.pow(10, (rssi_ave - (A-41))/-20.0);
+                                    sdistance = distance.toString();
+                                }
                                 break;
                             }
 
                             //TLM
                             case 0x20:
                             {
+                                rssi_array[2] = rssi;
 
                                 Byte tlmvers = scanRecord[12];
                                 Byte bv = scanRecord[13];
@@ -286,7 +310,14 @@ public class MainActivity extends AppCompatActivity {
                                 Log.d("PDUcount", PDUcount.toString());
                                 Log.d("uptime", uptime.toString());
 
-
+                                if(unlock)
+                                {
+                                    String sdistance = "unknown";
+                                    double rssi_ave = (rssi_array[0] + rssi_array[1] + rssi_array[2])/3.0;
+                                    Log.d("RSSI", rssi + "");
+                                    Double distance = Math.pow(10, (rssi_ave - (A-41))/-20.0);
+                                    sdistance = distance.toString();
+                                }
 
                                 int volt = (((battvolt[0] << 8) &0xFFFF) | (battvolt[1] & 0xFF));
                                 Integer ovolt = volt;

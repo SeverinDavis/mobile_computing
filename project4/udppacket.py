@@ -71,11 +71,5 @@ class udpPacket(object):
 				latencyString = latencyString + str((latencies[x])[0]) + str((latencies[x])[1])
 			self.odata = self.odata[0:15] + latencyString
 
-
-
-
-	def print(self):
+	def printMessageData(self):
 		print(self.getMessageData())
-
-
-

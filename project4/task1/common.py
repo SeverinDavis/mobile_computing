@@ -24,11 +24,23 @@ l = []
 node_list = []
 # Adj. matrix
 adjMatrix = []
+# Send time for latency calculation
+sendTime = 0
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(('0.0.0.0', 5008))
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 sock.settimeout(0.1) # 0.1 second timeout
+
+def printMatrix():
+	printMatrix =[row[:] for row in adjMatrix]
+	copyNodeList = node_list[:]
+	copyNodeList.insert(0, '168')
+	for row in range(0, len(printMatrix)):
+		printMatrix[row].insert(0, copyNodeList[row])
+	copyNodeList.insert(0, '')
+	printMatrix.insert(0, copyNodeList)
+	print('\n'.join([''.join(['  {:3}'.format(item) for item in row]) for row in printMatrix]))
 
 def randomDelay():
 	randomInt = random.randint(0,9)
@@ -75,12 +87,13 @@ def findIndex(ip):
 	copy_list.insert(0, MY_IP)
 	for x in range(0, len(copy_list)):
 		if copy_list[x] == ip:
-			print(x)
 			return x
 	return -1
 
 
 def rx():
+	global sendTime
+	
 	try: 
 		data, addr = sock.recvfrom(1024)
 	except socket.timeout :
@@ -89,7 +102,7 @@ def rx():
 	message.setMessage(data)
 
 	# Severin's brilliant idea
-	randomDelay()
+	# randomDelay()
 
 	# Self check
 	if message.getSender() == MY_IP :
@@ -135,6 +148,10 @@ def rx():
 			# Send a latency query to the neighbors
 			query = udppacket.udpPacket()
 			query.buildMessage(createRandomMid(), BROADCAST_IP, MY_IP, LATENCY_QUERY, '')
+			# Find out send time (latency calculation)
+			sendTime = time.time()
+			# Clear the neighbors list
+			del neighbors[:]
 			tx(query.getMessage())
 			# Wait for some time for replies
 			for x in range(0, 10) :
@@ -163,14 +180,14 @@ def rx():
 					return
 				adjMatrix[x][y] = node[1]
 			# Print matrix
-			print('\n'.join([''.join(['  {:3}'.format(item) for item in row]) for row in adjMatrix]))
+			printMatrix()
 		else:
 			print('Forwarding latency command response to ' + message.getDestination())
 			tx(message.getMessage())
 
 	elif message.getMessageType() == LATENCY_QUERY : 
 		print('Latency query received. Replying...')
-		time.sleep(0.1) # TEST
+		# time.sleep(0.1) # TEST
 		# Just reply the sender
 		reply = udppacket.udpPacket()
 		reply.buildMessage(createRandomMid(), message.getSender(), MY_IP, LATENCY_QUERY_RESPONSE, '')
@@ -178,12 +195,19 @@ def rx():
 
 	elif message.getMessageType() == LATENCY_QUERY_RESPONSE :
 		if message.getDestination() == MY_IP :
+			# Find out receive time
+			receiveTime = time.time()
+			latency = (receiveTime - sendTime) / 2
 			print('Latency query response received.')
+			print(latency)
+			latencyString = str(int(latency * 100000)).zfill(3)
+			print(latencyString)
 			# Fill the list of neighbors
+			# Duplicate check
 			for x in range(0, len(neighbors)):
 				if (neighbors[x])[0] == message.getSender():
 					return
-			neighbors.append((message.getSender(), '123')) # TODO: calculatedLatency
+			neighbors.append((message.getSender(), latencyString)) # TODO: calculatedLatency
 			print(neighbors)
 
 	else :

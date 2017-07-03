@@ -4,7 +4,7 @@ import time
 
 if __name__ == "__main__":
 	txMessage = udppacket.udpPacket()
-	'''
+	
 	# Discovery routine
 	common.sock.settimeout(0.1)
 	
@@ -15,9 +15,9 @@ if __name__ == "__main__":
 		# Wait for responses
 		for x in range (0, 10):
 			common.rx()
-	'''
-	common.node_list = ['175', '193', '181', '177'] # TEST
-	print('Node list:')
+	
+	# common.node_list = ['175', '193', '181', '177'] # TEST
+	print('Discovery routine finished. Node list:')
 	print(common.node_list)
 
 	# Create adjacency matrix
@@ -37,8 +37,20 @@ if __name__ == "__main__":
 		# Send a latency query to the neighbors
 		query = udppacket.udpPacket()
 		query.buildMessage(common.createRandomMid(), common.BROADCAST_IP, common.MY_IP, common.LATENCY_QUERY, '')
+		common.sendTime = time.time()
+		# Clear the neighbors list
+		del common.neighbors[:]
 		common.tx(query.getMessage())
 		# Wait for some time for replies
 		for x in range(0, 10) :
 			common.rx()
-		# TODO: add the masters neighbors to the adj matrix too.
+		# Add the masters neighbors to the adj matrix too.
+		for node in common.neighbors:
+			x = common.findIndex(common.MY_IP)
+			y = common.findIndex(node[0])
+			if x == -1 or y == -1:
+				print('-1 received')
+				break
+			common.adjMatrix[x][y] = node[1]
+		# Print matrix
+		common.printMatrix()

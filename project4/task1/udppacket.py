@@ -49,6 +49,17 @@ class udpPacket(object):
 				route.append(self.odata[16+(x*3):16+(x*3)+3])
 		return route
 
+	def appendNode(self, node):
+		if self.getMessageType() == self.ROUTE_REQUEST:
+			route = self.getRoute()
+			route.append(node)
+			count = int(self.odata[15:16])
+			count = count + 1
+			routeString = str(count)
+			for x in range(0, count):
+				routeString = routeString + str(route[x])
+			self.odata = self.odata[0:15] + routeString
+
 	def getLatencies(self):
 		latencies = []
 		if self.getMessageType() == self.LATENCY_COMMAND_RESPONSE:
